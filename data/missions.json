@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ARI-001",
+    "title": "첫 검 잡기",
+    "category": "ARI",
+    "points": 100,
+    "status": "active"
+  },
+  {
+    "id": "ARI-002",
+    "title": "기본 자세 7일 도전",
+    "category": "ARI",
+    "points": 200,
+    "status": "active"
+  },
+  {
+    "id": "ZEN-001",
+    "title": "연무도 집중 완주",
+    "category": "ZEN",
+    "points": 500,
+    "status": "active"
+  }
+]

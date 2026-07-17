@@ -1,0 +1,18 @@
+{
+  "updated": "2026-07-17",
+  "notice": "Demo data for version 1",
+  "world": [
+    {
+      "rank": 1,
+      "id": "ARI-001",
+      "country": "KR",
+      "score": 9820
+    },
+    {
+      "rank": 2,
+      "id": "ZEN-007",
+      "country": "US",
+      "score": 9340
+    }
+  ]
+}
