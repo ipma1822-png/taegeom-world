@@ -37,16 +37,46 @@ $('hamb').addEventListener('click',()=>$('drawer').classList.toggle('open'));
 $('openRules').addEventListener('click',()=>$('rulesModal').classList.add('open'));
 $('rulesClose').addEventListener('click',()=>$('rulesModal').classList.remove('open'));
 $('rulesModal').addEventListener('click',e=>{if(e.target===$('rulesModal'))$('rulesModal').classList.remove('open')});
-$('verifyBtn').addEventListener('click',()=>{
- const n=$('name').value.trim(), b=$('birth').value.replace(/\D/g,'');
- if(n==='김성근'&&(b==='720615'||b==='19720615')){
-   $('result').style.display='block'; $('msg').textContent='김성근님의 태권검도 단증이 조회되었습니다.';
-   dan.value='8'; render(); $('aName').value='김성근'; $('aBirth').value='720615'; currentDan.value='7단'; targetDanSelect.value='8';
- }else{
-   $('result').style.display='none'; $('msg').textContent='입력한 성명과 생년월일에 일치하는 샘플 기록이 없습니다.';
- }
+let verifiedDanRecord=null;
+function setPromotionVisibility(rank){
+ const allowed=rank<8;
+ $('next8').style.display=allowed?'':'none';
+ $('apply').style.display=allowed?'':'none';
+ $('fees').style.display=allowed?'':'none';
+ if(!allowed){$('form').classList.remove('open');$('reviewModal').classList.remove('open')}
+}
+$('verifyBtn').addEventListener('click',async()=>{
+ const n=$('name').value.trim(),digits=$('birth').value.replace(/\D/g,'');
+ const birth=digits.length===8?digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6):digits.length===6?(Number(digits.slice(0,2))<=Number(new Date().getFullYear()%100)?'20':'19')+digits.slice(0,2)+'-'+digits.slice(2,4)+'-'+digits.slice(4):'';
+ verifiedDanRecord=null;$('result').style.display='none';setPromotionVisibility(0);
+ if(!n||!birth){$('msg').textContent='성명과 생년월일을 확인해 주세요.';return}
+ $('msg').textContent='공식 단증 기록을 확인하고 있습니다.';
+ try{
+  const {data,error}=await sb.rpc('ica_find_credentials_by_identity',{p_name:n,p_birth_date:birth});
+  if(error)throw error;
+  const rows=(Array.isArray(data)?data:[]).filter(r=>r.issuer_code==='WTKF'&&r.type_code==='DAN');
+  if(rows.length!==1){$('msg').textContent=rows.length?'일치하는 단증이 여러 건입니다. 본부에 확인해 주세요.':'일치하는 공식 단증 기록이 없습니다.';return}
+  const r=rows[0],rank=parseInt(r.rank_grade,10);
+  if(!Number.isFinite(rank))throw new Error('단위 확인 필요');
+  verifiedDanRecord={...r,rank,birth};
+  const result=$('result'),photo=result.querySelector('.photo img'),facts=result.querySelectorAll('.facts b');
+  photo.src=r.photo_url||'../assets/dan/wtkf-emblem.png';photo.alt=r.person_name+' 증명사진';
+  result.querySelector('h3').textContent=r.person_name;
+  facts[0].textContent=rank+' DAN';facts[1].textContent=r.credential_no;
+  facts[2].textContent=String(r.issued_on||'').replace(/-/g,'.');facts[3].textContent=r.issuer_code;
+  setPromotionVisibility(rank);
+  if(rank<8){
+   const next=rank+1;$('next8').textContent=next+'단 승단 신청하기 · '+money(fees[next])+' →';
+   dan.value=String(next);render();$('aName').value=r.person_name;$('aBirth').value=birth;currentDan.value=rank+'단';targetDanSelect.value=String(next);
+  }
+  result.style.display='block';$('msg').textContent=r.person_name+'님의 태권검도 단증이 조회되었습니다.';
+ }catch(e){$('msg').textContent='공식 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'}
 });
-$('next8').addEventListener('click',()=>{dan.value='8';render();$('aName').value='김성근';$('aBirth').value='720615';currentDan.value='7단';targetDanSelect.value='8';document.querySelector('#apply').scrollIntoView({behavior:'smooth'})});
+$('next8').addEventListener('click',()=>{
+ if(!verifiedDanRecord||verifiedDanRecord.rank>=8)return;
+ const r=verifiedDanRecord,next=r.rank+1;
+ dan.value=String(next);render();$('aName').value=r.person_name;$('aBirth').value=r.birth;currentDan.value=r.rank+'단';targetDanSelect.value=String(next);$('apply').scrollIntoView({behavior:'smooth'});
+});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('301-0141-2075-31');$('copy').textContent='복사 완료 ✓'}catch(e){$('copy').textContent='301-0141-2075-31'}});
 $('openForm').addEventListener('click',()=>$('form').classList.toggle('open'));
 let optimizedProfile=null,optimizedProof=null;
